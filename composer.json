@@ -5,12 +5,12 @@
     "keywords": ["Symfony", "AWS", "ENV", "Secrets Manager"],
     "license": "MIT",
     "require": {
-        "php": ">=8.0",
-        "symfony/dependency-injection": "^6.0",
+        "php": ">=8.2",
+        "symfony/dependency-injection": "^6.0 | ^7.0",
         "ext-json": "*"
     },
     "require-dev": {
-        "symfony/framework-bundle": "^6.0",
+        "symfony/framework-bundle": "^6.0 | ^7.0",
         "phpunit/phpunit": "^9.5",
         "symfony/phpunit-bridge": "^5.3 | ^4.0",
         "phpspec/prophecy-phpunit": "^2.0",
