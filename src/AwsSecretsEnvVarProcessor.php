@@ -45,15 +45,37 @@ class AwsSecretsEnvVarProcessor implements EnvVarProcessorInterface
 
         $value = $getEnv($name);
 
+        if (empty($value)) {
+            throw new RuntimeException(
+                "Environment variable '{$name}' is empty. Expected format: 'secret_id{$this->delimiter}key'"
+            );
+        }
+
         $parts = explode($this->delimiter, $value);
-        $result = $this->provider->get($parts[0]);
+        $secretId = trim($parts[0]);
+
+        if (empty($secretId)) {
+            throw new RuntimeException(
+                "Secret ID is empty for environment variable '{$name}'. Expected format: 'secret_id{$this->delimiter}key'"
+            );
+        }
+
+        $result = $this->provider->get($secretId);
 
         if (isset($parts[1])) {
-            if (!isset($this->decodedSecrets[$parts[0]])) {
-                $this->decodedSecrets[$parts[0]] = json_decode($result, true);
+            $key = trim($parts[1]);
+
+            if (!isset($this->decodedSecrets[$secretId])) {
+                $this->decodedSecrets[$secretId] = json_decode($result, true);
             }
 
-            return (string)$this->decodedSecrets[$parts[0]][$parts[1]];
+            if (!isset($this->decodedSecrets[$secretId][$key])) {
+                throw new RuntimeException(
+                    "Key '{$key}' not found in secret '{$secretId}' for environment variable '{$name}'"
+                );
+            }
+
+            return (string)$this->decodedSecrets[$secretId][$key];
         }
 
         return $result;

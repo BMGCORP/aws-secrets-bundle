@@ -9,6 +9,8 @@ use Constup\AwsSecretsBundle\AwsSecretsEnvVarProcessor;
 use Constup\AwsSecretsBundle\Provider\AwsSecretsArrayEnvVarProvider;
 use Constup\AwsSecretsBundle\Provider\AwsSecretsCachedEnvVarProvider;
 use Constup\AwsSecretsBundle\Provider\AwsSecretsEnvVarProvider;
+use Constup\AwsSecretsBundle\Service\SecretsManager;
+use Constup\AwsSecretsBundle\Service\SecretsManagerInterface;
 use Exception;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Symfony\Component\DependencyInjection\ChildDefinition;
@@ -35,6 +37,7 @@ class AwsSecretsExtension extends Extension
         $container->setParameter('aws_secrets.ttl', $configs['ttl']);
         $container->setParameter('aws_secrets.ignore', $configs['ignore']);
         $container->setParameter('aws_secrets.delimiter', $configs['delimiter']);
+        $container->setParameter('aws_secrets.secret_id', $configs['secret_id']);
 
         $container->register('aws_secrets.secrets_manager_client', SecretsManagerClient::class)
             ->setLazy(true)
@@ -80,5 +83,15 @@ class AwsSecretsExtension extends Extension
             ->setArgument('$delimiter', $container->getParameter('aws_secrets.delimiter'))
             ->setPublic(false)
             ->addTag('container.env_var_processor');
+
+        $container->register('aws_secrets.secrets_manager', SecretsManager::class)
+            ->setArgument('$client', new Reference('aws_secrets.client'))
+            ->setArgument('$cache', new Reference('aws_secrets.cache'))
+            ->setArgument('$secretId', $container->getParameter('aws_secrets.secret_id'))
+            ->setArgument('$ttl', $container->getParameter('aws_secrets.ttl'))
+            ->setPublic(true);
+
+        $container->setAlias(SecretsManagerInterface::class, 'aws_secrets.secrets_manager')
+            ->setPublic(true);
     }
 }
