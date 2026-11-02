@@ -12,8 +12,9 @@ use Constup\AwsSecretsBundle\Provider\AwsSecretsEnvVarProvider;
 use Constup\AwsSecretsBundle\Service\SecretsManager;
 use Constup\AwsSecretsBundle\Service\SecretsManagerInterface;
 use Exception;
+use Symfony\Component\Cache\Adapter\ApcuAdapter;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
-use Symfony\Component\DependencyInjection\ChildDefinition;
+use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Extension\Extension;
@@ -21,6 +22,8 @@ use Symfony\Component\DependencyInjection\Reference;
 
 class AwsSecretsExtension extends Extension
 {
+    const CACHE_NAMESPACE = 'aws_secrets';
+
     /**
      * Loads a specific configuration.
      *
@@ -52,15 +55,16 @@ class AwsSecretsExtension extends Extension
         $container->setAlias('aws_secrets.client', 'aws_secrets.secrets_manager_client')
             ->setPublic(true);
 
+        // Not a framework cache pool: pools get the cache logger and tracing decorators, and if any of them
+        // needs a secret itself (e.g. Sentry DSN via env(aws:...)), resolving it recurses until memory runs out.
         if ($configs['cache'] === 'apcu') {
-            $definition = new ChildDefinition('cache.adapter.apcu');
+            $definition = new Definition(ApcuAdapter::class, [self::CACHE_NAMESPACE]);
         } elseif ($configs['cache'] === 'filesystem') {
-            $definition = new ChildDefinition('cache.adapter.filesystem');
+            $definition = new Definition(FilesystemAdapter::class, [self::CACHE_NAMESPACE, 0, '%kernel.cache_dir%/' . self::CACHE_NAMESPACE]);
         } else {
             $definition = new Definition(ArrayAdapter::class);
         }
 
-        $definition->addTag('cache.pool');
         $container->setDefinition('aws_secrets.cache', $definition);
 
         $container->register('aws_secrets.env_var_provider', AwsSecretsEnvVarProvider::class)

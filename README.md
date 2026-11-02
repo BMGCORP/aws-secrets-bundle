@@ -65,8 +65,20 @@ aws_secrets:
   ttl: 60             # Cache TTL in seconds.
   delimiter: ','      # Delimiter to separate key from secret name.
   ignore: false       # Pass through AWS (for local dev environments set to "true").
-  secret_id: ~        # Required: Default secret ID for the SecretsManager service.
+  secret_id: ~        # Optional. Set to register the SecretsManager service.
 ```
+
+With `ignore: true`, the env processor returns local environment values. The `secret_id` option is
+independent of `ignore`: the AWS env processor gets secret IDs from environment values. If `secret_id` is omitted or
+null, the `SecretsManager` service and its interface alias are not registered. When a secret ID is
+provided, this service remains available and calls AWS independently of `ignore`.
+
+The `aws_secrets.cache` service is a standalone cache adapter (APCu namespace `aws_secrets`, or
+`%kernel.cache_dir%/aws_secrets` for the filesystem cache), not a framework cache pool. Framework pools get the
+`cache` channel logger and tracing decorators (for example Sentry cache tracing). When any of those needs a secret
+itself, such as a Sentry DSN set via `%env(aws:...)%`, resolving that secret would need the cache again and the
+container would recurse until memory runs out. As a result `cache:pool:clear` and `cache:clear` do not clear this
+cache. Entries expire after `ttl`, and the APCu cache is also cleared when PHP restarts.
 
 ## Usage
 

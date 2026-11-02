@@ -38,10 +38,15 @@ class Configuration implements ConfigurationInterface
             ->enumNode('cache')->values(['apcu', 'filesystem', 'array'])->defaultValue('array')->end()
             ->scalarNode('ttl')->defaultValue(60)->end()
             ->scalarNode('delimiter')->defaultValue(',')->end()
-            ->scalarNode('ignore')->defaultFalse()->end()
+            ->booleanNode('ignore')->defaultFalse()->end()
             ->scalarNode('secret_id')
+                ->defaultNull()
                 ->info('The AWS Secrets Manager secret ID to manage (required for SecretsManager service)')
-                ->isRequired()
+                ->validate()
+                    ->ifTrue(static fn ($v): bool => $v !== null && !is_string($v))
+                    ->thenInvalid('The "secret_id" option must be a string or null.')
+                ->end()
+                ->end()
             ->end();
 
         return $treeBuilder;
