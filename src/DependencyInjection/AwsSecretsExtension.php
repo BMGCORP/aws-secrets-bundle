@@ -88,10 +88,15 @@ class AwsSecretsExtension extends Extension
             ->setPublic(false)
             ->addTag('container.env_var_processor');
 
+        // SecretsManager manages a single secret, so it is only available when secret_id is configured
+        if ($configs['secret_id'] === null) {
+            return;
+        }
+
         $container->register('aws_secrets.secrets_manager', SecretsManager::class)
             ->setArgument('$client', new Reference('aws_secrets.client'))
             ->setArgument('$cache', new Reference('aws_secrets.cache'))
-            ->setArgument('$secretId', $container->getParameter('aws_secrets.secret_id'))
+            ->setArgument('$secretId', $configs['secret_id'])
             ->setArgument('$ttl', $container->getParameter('aws_secrets.ttl'))
             ->setPublic(true);
 
